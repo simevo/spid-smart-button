@@ -1,0 +1,30 @@
+language: node_js
+node_js:
+  - "8"
+dist: trusty # needs Ubuntu Trusty
+sudo: required
+addons:
+  chrome: stable # have Travis install Chrome stable
+
+before_install:
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
+install: npm install
+before_script:
+  - npm start &
+  - wget --spider --timeout=15 --retry-connrefused http://localhost:9090
+  - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
+  - sleep 30
+  - wget --spider --timeout=15 --retry-connrefused http://localhost:9222
+  - find . | grep 'chrome-linux/chrome$' | xargs ldd
+  - sleep 30
+script:
+  - npm test
+
+deploy:
+  provider: pages
+  local-dir: dist
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN
+  on:
+    branch: master
